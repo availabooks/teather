@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Teather</title>
+  <meta name="description" content="Teather lets free websites save each student's data in the student's own Google Drive.">
+  <link rel="icon" href="/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main>
+  <header class="top">
+    <a class="brand" href="/">te<span>a</span>ther</a>
+    <a class="button" href="/manage">Your data</a>
+  </header>
+
+  <h1>Your data, in your own Google Drive</h1>
+  <p>Teather lets free websites save things for you, such as settings, notes, highlights and drafts, without
+    making you create another account. Everything is kept in a <strong>Teather</strong> folder in your own Google Drive.
+    It belongs to you, it follows you to any computer, and it costs you nothing.</p>
+
+  <div class="card">
+    <h3>For students</h3>
+    <ul>
+      <li>When a site offers "Sign in with Google" through Teather, it can save your work in your Drive.</li>
+      <li>Teather can only see the files it creates in the Teather folder. It can't see anything else in your Drive.</li>
+      <li>Each site gets its own folder and can only use its own data.</li>
+      <li>See, change, download or delete your data any time on <a href="/manage">your data page</a>, or right in Google Drive.</li>
+    </ul>
+  </div>
+
+  <h2>Sites using Teather</h2>
+  <ul>
+    <li><a href="https://www.loomination.org">Loomination</a>: weaving design</li>
+    <li><a href="https://availabooks.com">AvailaBooks</a>: free textbooks</li>
+  </ul>
+
+  <h2>For site builders</h2>
+  <p>Teather is for free, public sites. Your site must be registered first so students know who is saving their data.
+    Add one script and you have storage that syncs:</p>
+  <pre><code>&lt;script src="https://teather.pages.dev/v1/teather.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  Teather.init();
+  Teather.set("settings", { fontSize: 18 });   // saved at once in the browser, synced to Drive
+  Teather.get("settings");                     // works before and after sign-in
+  Teather.onChange(({ key, value, source }) =&gt; { /* another device changed something */ });
+  signInButton.onclick = () =&gt; Teather.signIn();   // Google popup; must be from a click
+
+  // Who is signed in: { email, name, picture } or null
+  Teather.onAuthChange((user) =&gt; {
+    // Google photo at 64 px, or the student's initial on a colored circle
+    avatar.src = user ? Teather.pictureUrl(64) : "";
+  });
+&lt;/script&gt;
+&lt;img id="avatar" referrerpolicy="no-referrer" alt=""&gt;</code></pre>
+  <p>Before a student signs in, data stays in their browser. When they sign in it is uploaded, and from then on it syncs.
+    Each saved value can be up to 256 KB, and a site's data up to 5 MB in total. Save large things, such as copies of
+    work, as files: <code>Teather.files.put(name, blob)</code>, <code>.get(name)</code>, <code>.list()</code>,
+    <code>.remove(name)</code>, up to 10 MB each.</p>
+  <p class="muted small">Students can always delete or change files in their own Drive. If your site needs to trust a file, such as
+    work waiting to be submitted, sign it with a key on your own server and check the signature.</p>
+
+  <footer>
+    <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="/manage">Your data</a> · <a href="mailto:teather@technologylearningcompany.com">Contact</a>
+  </footer>
+</main>
+</body>
+</html>

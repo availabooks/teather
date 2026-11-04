@@ -1,0 +1,13 @@
+name = "teather"
+pages_build_output_dir = "public"
+compatibility_date = "2025-09-01"
+
+[vars]
+# Set DEV = "1" in .dev.vars to allow http://localhost origins during development.
+DEV = "0"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "teather"
+database_id = "d907029e-1153-4b1a-b330-4c745430efcb"
+migrations_dir = "migrations"

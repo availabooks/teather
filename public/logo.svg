@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <title>Teather</title>
+  <rect width="120" height="120" rx="26" fill="#2f6f5e"/>
+  <!-- the "t" -->
+  <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M50 24 V76 Q50 90 64 90 H70" stroke-width="12"/>
+    <path d="M34 46 H70" stroke-width="12"/>
+    <!-- the tether: the t's tail runs on as a cord to a ring -->
+    <path d="M70 90 C84 90 92 82 90 70" stroke-width="5"/>
+    <circle cx="88" cy="61" r="8" stroke-width="5"/>
+  </g>
+</svg>

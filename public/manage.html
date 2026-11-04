@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your Teather Data</title>
+  <meta name="description" content="See, edit, download or delete the data that free sites save in your Google Drive through Teather.">
+  <link rel="icon" href="/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main>
+  <header class="top">
+    <a class="brand" href="/">te<span>a</span>ther</a>
+    <div class="row hidden" id="who">
+      <img id="avatar" class="avatar" alt="" width="32" height="32">
+      <span class="muted small" id="email"></span>
+      <button id="signout">Sign out</button>
+    </div>
+  </header>
+
+  <section id="signed-out">
+    <h1>Your data</h1>
+    <p>Sites that use Teather save your settings, notes and other data in a <strong>Teather</strong> folder in your own Google Drive.
+      Sign in with the same Google account to see it, change it, download it or delete it.</p>
+    <button class="primary" id="signin">Sign in with Google</button>
+    <p class="warn hidden" id="signin-error"></p>
+  </section>
+
+  <section id="signed-in" class="hidden">
+    <h1>Your data</h1>
+    <p class="muted">Everything here is stored in the <strong>Teather</strong> folder in your Google Drive. It belongs to you.</p>
+    <div id="sites"><p class="muted">Loading…</p></div>
+
+    <h2>Stop using Teather</h2>
+    <p class="muted small">This signs you out of every connected site on every device and removes Teather's access to your Google
+      Drive. Your files stay in Drive until you delete them.</p>
+    <button class="danger" id="disconnect">Sign out everywhere</button>
+  </section>
+
+  <footer>
+    <a href="/">About Teather</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a>
+  </footer>
+</main>
+
+<dialog id="edit">
+  <h3 id="edit-title"></h3>
+  <p class="muted small">The value is JSON. Text needs "double quotes".</p>
+  <textarea id="edit-value" spellcheck="false"></textarea>
+  <p class="warn hidden" id="edit-error"></p>
+  <div class="row" style="justify-content:flex-end; margin-top:12px">
+    <button id="edit-cancel">Cancel</button>
+    <button class="primary" id="edit-save">Save</button>
+  </div>
+</dialog>
+
+<script src="/manage.js"></script>
+</body>
+</html>

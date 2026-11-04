@@ -1,0 +1,2 @@
+# Versioned address for sites. Served in place (no redirect). A breaking API change would go in /v2/.
+/v1/teather.js  /teather.js  200

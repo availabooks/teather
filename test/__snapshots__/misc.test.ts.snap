@@ -1,0 +1,45 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`READMEs > site README includes the site's removal warnings 1`] = `
+"# Loomination
+
+Loomination is a free weaving design tool. It saves your drafts and settings here so they follow you to any computer you sign in on.
+
+Website: https://www.loomination.org
+
+## What Loomination saves here
+
+- weaving drafts you have saved
+- your loom profile
+- warp plans and yarn calculations
+- your yarn stash and AI-assistant notes
+
+## Files in this folder
+
+- \`state.json\`: Loomination's saved settings and items, as text.
+- \`README.md\`: this file.
+- Any other files are things Loomination saved for you.
+- \`state.broken-<date>.json\`, if present, is a backup of a file Teather couldn't read. You can delete it.
+
+## Managing this data
+
+Go to https://teather.pages.dev/manage, sign in with this Google account and choose Loomination. There you can see each saved item,
+edit or delete it, download files, or download everything.
+
+## Removing it safely
+
+1. On https://teather.pages.dev/manage, choose **Delete & disconnect** for Loomination. This signs you out of Loomination on every
+   device and moves this folder to your Drive trash.
+2. Or: sign out on Loomination first, then delete this folder.
+
+If you delete this folder while you are still signed in on Loomination, the copy saved in your browser will be
+uploaded again the next time you use it.
+
+## Questions
+
+About Loomination: https://www.loomination.org
+About Teather: https://teather.pages.dev
+
+_Teather writes this file and may update it. Your edits to it will be replaced._
+"
+`;

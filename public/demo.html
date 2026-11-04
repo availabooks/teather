@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Teather Demo</title>
+  <meta name="description" content="Test page for teather.js. Serve it from http://localhost with DEV=1.">
+  <link rel="icon" href="/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main>
+  <header class="top">
+    <a class="brand" href="/">te<span>a</span>ther demo</a>
+    <div class="row">
+      <img id="avatar" class="avatar hidden" alt="" referrerpolicy="no-referrer">
+      <span class="muted small" id="status"></span>
+      <button class="primary" id="signin">Sign in</button>
+      <button id="signout" class="hidden">Sign out</button>
+    </div>
+  </header>
+  <p class="muted small">Test page for <code>teather.js</code>. To act as a separate site, serve this folder on another port
+    (for example <code>npx serve public -l 3000</code>) while <code>wrangler pages dev</code> runs with <code>DEV=1</code>.</p>
+
+  <h2>Items</h2>
+  <div class="row">
+    <input type="text" id="key" placeholder="key" style="max-width:12rem">
+    <input type="text" id="value" placeholder='value as JSON, e.g. "hello" or {"a":1}'>
+    <button id="set">Set</button>
+  </div>
+  <div class="table-wrap"><table><tbody id="items"></tbody></table></div>
+
+  <h2>Files</h2>
+  <div class="row">
+    <input type="file" id="file">
+    <button id="upload">Upload</button>
+    <button id="refresh-files">Refresh</button>
+  </div>
+  <div class="table-wrap"><table><tbody id="files"></tbody></table></div>
+
+  <h2>Log</h2>
+  <pre id="log" class="small" style="max-height:16rem"></pre>
+</main>
+
+<script>
+  // Load teather.js from the Teather server even when this page is served elsewhere.
+  var TEATHER = new URLSearchParams(location.search).get("teather") || (location.port === "8788" ? location.origin : "http://localhost:8788");
+  var s = document.createElement("script");
+  s.src = TEATHER + "/teather.js";
+  s.onload = start;
+  document.head.appendChild(s);
+
+  function $(id) { return document.getElementById(id); }
+  function log(msg) { $("log").textContent = new Date().toLocaleTimeString() + "  " + msg + "\n" + $("log").textContent; }
+  function esc(x) { return String(x).replace(/[&<>"']/g, function (c) { return "&#" + c.charCodeAt(0) + ";"; }); }
+
+  function start() {
+    Teather.init({ base: TEATHER });
+    Teather.onStatus(function (st) { $("status").textContent = st; log("status: " + st); });
+    Teather.onAuthChange(function (u) { log("auth: " + (u ? u.email : "signed out")); renderAuth(); });
+    Teather.onChange(function (c) { log("change (" + c.source + "): " + c.key + " = " + JSON.stringify(c.value)); renderItems(); });
+    Teather.ready().then(function () { renderAuth(); renderItems(); });
+    renderAuth();
+    renderItems();
+
+    $("signin").onclick = function () {
+      Teather.signIn().then(function (u) { log("signed in as " + u.email); renderFiles(); }, function (e) { log("sign-in failed: " + e.code + " " + e.message); });
+    };
+    $("signout").onclick = function () { Teather.signOut().then(renderAuth); };
+    $("set").onclick = function () {
+      var v;
+      try { v = JSON.parse($("value").value); } catch (e) { v = $("value").value; }
+      Teather.set($("key").value, v);
+    };
+    $("items").onclick = function (e) {
+      var k = e.target.getAttribute("data-del");
+      if (k) Teather.remove(k);
+    };
+    $("upload").onclick = async function () {
+      var f = $("file").files[0];
+      if (!f) return;
+      try { var r = await Teather.files.put(f.name, f); log("uploaded " + r.name + " (" + r.size + " bytes)"); renderFiles(); }
+      catch (e) { log("upload failed: " + e.code + " " + e.message); }
+    };
+    $("refresh-files").onclick = renderFiles;
+    $("files").onclick = async function (e) {
+      var get = e.target.getAttribute("data-get"), del = e.target.getAttribute("data-del-file");
+      try {
+        if (get) {
+          var blob = await Teather.files.get(get);
+          var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = get; a.click();
+        }
+        if (del) { await Teather.files.remove(del); log("deleted " + del); renderFiles(); }
+      } catch (err) { log("file error: " + err.code + " " + err.message); }
+    };
+  }
+
+  function renderAuth() {
+    var u = Teather.user();
+    $("signin").classList.toggle("hidden", !!u);
+    $("signout").classList.toggle("hidden", !u);
+    $("status").textContent = u ? (u.name || u.email) + " · " + Teather.status() : Teather.status();
+    $("avatar").classList.toggle("hidden", !u);
+    if (u) $("avatar").src = Teather.pictureUrl(64);
+    if (u) renderFiles();
+  }
+
+  function renderItems() {
+    var all = Teather.all();
+    $("items").innerHTML = Object.keys(all).sort().map(function (k) {
+      return "<tr><td><code>" + esc(k) + "</code></td><td class=\"preview\">" + esc(JSON.stringify(all[k])) + '</td><td class="actions"><button data-del="' + esc(k) + '">Delete</button></td></tr>';
+    }).join("") || '<tr><td class="muted">No items.</td></tr>';
+  }
+
+  async function renderFiles() {
+    if (!Teather.isSignedIn()) { $("files").innerHTML = '<tr><td class="muted">Sign in to use files.</td></tr>'; return; }
+    try {
+      var files = await Teather.files.list();
+      $("files").innerHTML = files.map(function (f) {
+        return "<tr><td><code>" + esc(f.name) + "</code></td><td>" + f.size + ' B</td><td class="actions"><button data-get="' + esc(f.name) + '">Download</button> <button data-del-file="' + esc(f.name) + '">Delete</button></td></tr>';
+      }).join("") || '<tr><td class="muted">No files.</td></tr>';
+    } catch (e) { log("list failed: " + e.code + " " + e.message); }
+  }
+</script>
+</body>
+</html>

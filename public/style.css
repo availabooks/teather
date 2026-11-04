@@ -1,0 +1,100 @@
+:root {
+  --bg: #f6f4ef;
+  --surface: #ffffff;
+  --fg: #1d2127;
+  --muted: #5d6572;
+  --line: #e2ddd3;
+  --accent: #2f6f5e;
+  --accent-fg: #ffffff;
+  --danger: #b3261e;
+  --warn-bg: #fff4d6;
+  --warn-fg: #6b4e00;
+  --code-bg: #efece5;
+  --radius: 10px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15171a;
+    --surface: #1e2125;
+    --fg: #e9e6df;
+    --muted: #a2a9b3;
+    --line: #33373d;
+    --accent: #6cc3a8;
+    --accent-fg: #0f1a16;
+    --danger: #f2948c;
+    --warn-bg: #3a3118;
+    --warn-fg: #f3d98a;
+    --code-bg: #26292e;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15171a;
+  --surface: #1e2125;
+  --fg: #e9e6df;
+  --muted: #a2a9b3;
+  --line: #33373d;
+  --accent: #6cc3a8;
+  --accent-fg: #0f1a16;
+  --danger: #f2948c;
+  --warn-bg: #3a3118;
+  --warn-fg: #f3d98a;
+  --code-bg: #26292e;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+main { max-width: 52rem; margin: 0 auto; padding: 32px 16px 64px; }
+header.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+.brand { font-weight: 700; font-size: 1.25rem; letter-spacing: .01em; color: var(--fg); text-decoration: none; }
+.brand span { color: var(--accent); }
+h1 { font-size: 1.8rem; line-height: 1.2; margin: 0 0 .5rem; }
+h2 { font-size: 1.2rem; margin: 2rem 0 .5rem; }
+h3 { font-size: 1.05rem; margin: 0 0 .25rem; }
+p { margin: 0 0 1rem; }
+a { color: var(--accent); }
+.muted { color: var(--muted); }
+.small { font-size: .875rem; }
+code, pre { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: .875em; }
+code { background: var(--code-bg); padding: .1em .35em; border-radius: 4px; }
+pre { background: var(--code-bg); padding: 12px 14px; border-radius: var(--radius); overflow-x: auto; }
+pre code { background: none; padding: 0; }
+
+button, .button {
+  font: inherit; font-size: .95rem; cursor: pointer; border-radius: 8px; padding: .5em 1em;
+  border: 1px solid var(--line); background: var(--surface); color: var(--fg); text-decoration: none; display: inline-block;
+}
+button:hover, .button:hover { border-color: var(--muted); }
+button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+button.danger { color: var(--danger); }
+button.link { border: none; background: none; padding: 0; color: var(--accent); text-decoration: underline; }
+button:disabled { opacity: .55; cursor: default; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin: 12px 0; }
+.warn { background: var(--warn-bg); color: var(--warn-fg); border-radius: 8px; padding: 8px 12px; margin: 8px 0; font-size: .9rem; }
+
+table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+td.actions { white-space: nowrap; text-align: right; }
+.table-wrap { overflow-x: auto; }
+.preview { color: var(--muted); font-family: ui-monospace, Consolas, monospace; font-size: .8rem; word-break: break-all; }
+
+textarea, input[type="text"] {
+  width: 100%; font: inherit; font-family: ui-monospace, Consolas, monospace; font-size: .85rem;
+  background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 8px;
+}
+textarea { min-height: 14rem; }
+dialog { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--fg); width: min(40rem, calc(100vw - 32px)); padding: 16px; }
+dialog::backdrop { background: rgb(0 0 0 / .4); }
+.hidden { display: none !important; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: var(--line); flex: none; }
+footer { margin-top: 48px; font-size: .875rem; color: var(--muted); }

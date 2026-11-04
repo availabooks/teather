@@ -151,6 +151,10 @@
     if (!meta.token) return Promise.resolve();
     if (pushing) return pushing.then(function () { return push(keepalive); });
     pushing = (async function () {
+      // Never finish synchronously: with nothing to send, `finally` would clear `pushing`
+      // before this assignment stores the promise, leaving it set forever, and the
+      // `pushing.then(push)` above would then loop without end (tab runs out of memory).
+      await null;
       try {
         var keys = Object.keys(meta.dirty);
         for (var i = 0; i < keys.length && meta.token; i += BATCH) {
@@ -191,6 +195,7 @@
     if (!meta.token) return Promise.resolve();
     if (pulling) return pulling;
     pulling = (async function () {
+      await null; // never finish synchronously, so `finally` runs after `pulling` is set (see push)
       try {
         setStatus("syncing");
         var res = await api("GET", "/api/state");

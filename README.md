@@ -53,6 +53,9 @@ removal warnings. Then deploy. Bump `version` whenever you change a site's text,
 
 See the comments in [public/teather.js](public/teather.js) for the full API.
 
+The full guide for site builders and AI coding assistants is [public/integrate.md](public/integrate.md), served at
+https://teather.pages.dev/integrate.md (and listed in `/llms.txt`). Keep it in step with `teather.js`.
+
 ## Development
 
 ```sh

@@ -21,6 +21,28 @@ export interface Site {
   /** Where a student can ask questions about this site. */
   contact: string;
   version: number;
+  /**
+   * Public Ed25519 keys (JWK) the site's own server signs its tokens with, for /api/server.
+   * The private halves are secrets on the site's server and never belong here.
+   */
+  serverKeys?: ServerKey[];
+  /**
+   * Shown on the page where a person lets the site's server use their folder while they are away.
+   * Sites without this can't ask for server access.
+   */
+  serverAccess?: {
+    /** One or two sentences: why the server needs it. */
+    summary: string;
+    /** What the server reads and writes, as short phrases. */
+    uses: string[];
+  };
+}
+
+export interface ServerKey {
+  kid: string;
+  kty: "OKP";
+  crv: "Ed25519";
+  x: string;
 }
 
 export const SITES: Site[] = [
@@ -46,22 +68,40 @@ export const SITES: Site[] = [
     origins: [
       "https://availabooks.com",
       "https://app.availabooks.com",
+      "https://dev.availabooks.com",
+      "https://local.availabooks.com:2732",
       "https://availabook.blogspot.com",
     ],
     name: "AvailaBooks",
     url: "https://availabooks.com",
     description:
-      "AvailaBooks publishes free online textbooks. It saves your reading settings, notes and highlights here, and can keep copies of work you have not yet submitted.",
+      "AvailaBooks publishes free online textbooks and runs courses that use them. Signing in to Teather is how you sign in to AvailaBooks, so AvailaBooks learns your name, email address and Google photo. It saves your reading settings, notes and highlights here. If you teach a course, that course's settings, class list, grades and students' finished work are kept here too.",
     stores: [
       "reading settings such as text size",
       "notes and highlights",
       "copies of work waiting to be submitted",
+      "for instructors: each course's settings, class list, grades and students' finished work, in the \"courses\" folder",
     ],
     removalNotes: [
       "Files whose names start with \"pending-\" are work you have not submitted yet. If you delete them before submitting, that work is lost.",
+      "If you teach a course, the \"courses\" folder is the main copy of its settings, class list and grades. AvailaBooks keeps a working copy, but deleting the folder or taking back AvailaBooks' access means changes stop reaching your Drive.",
     ],
     contact: "https://availabooks.com",
-    version: 1,
+    version: 2,
+    serverKeys: [
+      { kid: "availabooks-server-2026-11-06-b42db5", kty: "OKP", crv: "Ed25519", x: "NRtSpG3Neio9CLDOk8693O7qM_FeMshxjqP2ZqVBhyg" },
+    ],
+    serverAccess: {
+      summary:
+        "AvailaBooks keeps the courses you teach in your Teather folder. Students submit work and earn grades when you aren't online, so AvailaBooks' server needs to save those to your folder for you.",
+      uses: [
+        "course settings: title, books, dates and assignments",
+        "the class list and invitations",
+        "each student's grades",
+        "students' finished work, once they submit it",
+        "it reads these files back, including any changes you make to them in Drive",
+      ],
+    },
   },
 ];
 

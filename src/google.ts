@@ -79,7 +79,15 @@ export async function revoke(token: string): Promise<void> {
  * endpoint over TLS in this same request, so its signature need not be checked
  * (OpenID Connect Core 3.1.3.7).
  */
-export function idTokenClaims(idToken: string): { sub: string; email: string } & Profile {
+export interface IdClaims extends Profile {
+  sub: string;
+  email: string;
+  emailVerified: boolean;
+  givenName: string | null;
+  familyName: string | null;
+}
+
+export function idTokenClaims(idToken: string): IdClaims {
   const part = idToken.split(".")[1] ?? "";
   const bin = atob(part.replace(/-/g, "+").replace(/_/g, "/"));
   // The payload is UTF-8 (names can have accents), so decode the bytes properly.
@@ -89,6 +97,10 @@ export function idTokenClaims(idToken: string): { sub: string; email: string } &
   return {
     sub: claims.sub,
     email: claims.email,
+    // Google sends a boolean, but older tokens have used the string "true".
+    emailVerified: claims.email_verified === true || claims.email_verified === "true",
+    givenName: typeof claims.given_name === "string" ? claims.given_name : null,
+    familyName: typeof claims.family_name === "string" ? claims.family_name : null,
     name: typeof claims.name === "string" ? claims.name : null,
     picture: typeof claims.picture === "string" ? claims.picture : null,
   };

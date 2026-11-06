@@ -1,6 +1,6 @@
 import type { Env } from "../../src/env";
 import { HttpError } from "../../src/env";
-import { createSession, putHandoff, takeOAuthState, upsertUser } from "../../src/db";
+import { createSession, grantServerAccess, putHandoff, takeOAuthState, upsertUser } from "../../src/db";
 import { DRIVE_SCOPE, exchangeCode, idTokenClaims } from "../../src/google";
 import { html, route, scriptJson } from "../../src/http";
 import { siteForHost } from "../../src/sites";
@@ -38,10 +38,28 @@ export const onRequestGet = route(async (ctx) => {
       });
     }
     const claims = idTokenClaims(tok.id_token ?? "");
+    // Sites use the email to recognize people, so it must be one Google has confirmed.
+    if (!claims.emailVerified) {
+      return deliver({
+        error: "email_unverified",
+        message: "Google has not confirmed the email address on this account yet. Please confirm it with Google, then sign in again.",
+      });
+    }
     const profile = { name: claims.name, picture: claims.picture };
-    await upsertUser(ctx.env, claims.sub, claims.email, tok.refresh_token, profile);
+    await upsertUser(ctx.env, claims.sub, claims.email, tok.refresh_token, profile, {
+      givenName: claims.givenName,
+      familyName: claims.familyName,
+    });
+    // Only a sign-in started from the explanation page in /auth/start?grant=server records this.
+    if (state.purpose === "server") await grantServerAccess(ctx.env, claims.sub, state.host);
     const token = await createSession(ctx.env, { sub: claims.sub, host: state.host, origin: state.origin, manage: state.manage });
-    return deliver({ token, email: claims.email, ...profile, host: state.host });
+    return deliver({
+      token,
+      email: claims.email,
+      ...profile,
+      host: state.host,
+      ...(state.purpose === "server" ? { serverAccess: true } : {}),
+    });
   } catch (e) {
     const message = e instanceof HttpError ? e.message : "Sign-in failed. Please try again.";
     if (!(e instanceof HttpError)) console.error(e);
@@ -54,7 +72,9 @@ function page(origin: string | null, payload: Record<string, unknown>): Response
   const siteName = ok && typeof payload.host === "string" ? siteForHost(payload.host)?.name : null;
   const heading = ok ? "You're connected" : "Sign-in didn't finish";
   const text = ok
-    ? `${siteName ? `${siteName} can now save your data` : "Your data will be saved"} in the Teather folder in your Google Drive. You can close this window.`
+    ? payload.serverAccess
+      ? `${siteName ?? "The site"}'s server can now use its folder in your Teather folder. You can take this back on the Teather page at any time. You can close this window.`
+      : `${siteName ? `${siteName} can now save your data` : "Your data will be saved"} in the Teather folder in your Google Drive. You can close this window.`
     : String(payload.message ?? "Please try again.");
   return html(`<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">

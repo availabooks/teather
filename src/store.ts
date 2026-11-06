@@ -12,20 +12,96 @@ export const README_FILE = "README.md";
 export const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
 const FILE_NAME = /^[A-Za-z0-9._-]{1,100}$/;
-
-export function checkFileName(name: string) {
-  if (!FILE_NAME.test(name) || name === "." || name === "..") {
-    throw new HttpError(400, "File names may use letters, digits, '.', '_' and '-', up to 100 characters", "bad_name");
-  }
-  const lower = name.toLowerCase();
-  if (lower === "readme.md" || lower === "state.json" || lower.startsWith("state.broken-")) {
-    throw new HttpError(403, `"${name}" is reserved by Teather`, "reserved_name");
-  }
-}
+export const MAX_PATH_DEPTH = 5;
 
 function isReserved(name: string) {
   const lower = name.toLowerCase();
   return lower === "readme.md" || lower === "state.json" || lower.startsWith("state.broken-");
+}
+
+function checkSegment(name: string) {
+  if (!FILE_NAME.test(name) || name === "." || name === "..") {
+    throw new HttpError(400, "File names may use letters, digits, '.', '_' and '-', up to 100 characters", "bad_name");
+  }
+}
+
+export function checkFileName(name: string) {
+  checkSegment(name);
+  if (isReserved(name)) throw new HttpError(403, `"${name}" is reserved by Teather`, "reserved_name");
+}
+
+/**
+ * A file path inside a site folder: up to 5 names joined by "/", such as "courses/abc/roster.json".
+ * Only top-level names can be reserved, so "notes/state.json" is fine.
+ */
+export function checkFilePath(path: string | string[]): string[] {
+  const parts = Array.isArray(path) ? path : path.split("/");
+  if (parts.length === 0 || parts.length > MAX_PATH_DEPTH) {
+    throw new HttpError(400, `Paths may have at most ${MAX_PATH_DEPTH} parts`, "bad_name");
+  }
+  parts.forEach(checkSegment);
+  if (parts.length === 1) checkFileName(parts[0]);
+  return parts;
+}
+
+/** A folder path for listing: "" (the site folder) or up to 4 names joined by "/". */
+export function checkDirPath(path: string): string[] {
+  const parts = path.split("/").filter(Boolean);
+  if (parts.length >= MAX_PATH_DEPTH) throw new HttpError(400, "That folder is too deep", "bad_name");
+  parts.forEach(checkSegment);
+  return parts;
+}
+
+export interface FileInfo {
+  name: string;
+  size: number;
+  modifiedTime: string | undefined;
+  contentType: string;
+  /** Drive's version number for the file. It changes on every write; use it with If-Match. */
+  version: string | undefined;
+}
+
+function info(f: DriveFile, size?: number): FileInfo {
+  return { name: f.name, size: Number(f.size ?? size ?? 0), modifiedTime: f.modifiedTime, contentType: f.mimeType, version: f.version };
+}
+
+export interface WriteConditions {
+  /** An HTTP date: fail if the file changed after it. */
+  ifUnmodifiedSince?: string | null;
+  /** Fail unless the file exists with one of these Drive versions ("*" for any). */
+  ifMatch?: string | null;
+  /** "*": fail if the file already exists. */
+  ifNoneMatch?: string | null;
+}
+
+/** The write conditions a request's headers ask for. */
+export function writeConditions(request: Request): WriteConditions {
+  return {
+    ifUnmodifiedSince: request.headers.get("If-Unmodified-Since"),
+    ifMatch: request.headers.get("If-Match"),
+    ifNoneMatch: request.headers.get("If-None-Match"),
+  };
+}
+
+function unquote(v: string): string {
+  return v.trim().replace(/^W\//, "").replace(/^"(.*)"$/, "$1");
+}
+
+/** Throw 412 if the file doesn't meet the caller's conditions. */
+export function checkConditions(existing: DriveFile | null, c: WriteConditions) {
+  const fail = () => {
+    throw new HttpError(412, "The file was changed since you last read it", "precondition_failed");
+  };
+  if (c.ifNoneMatch && c.ifNoneMatch.trim() === "*" && existing) fail();
+  if (c.ifMatch) {
+    const wanted = c.ifMatch.split(",").map(unquote);
+    if (!existing || !(wanted.includes("*") || (existing.version !== undefined && wanted.includes(existing.version)))) fail();
+  }
+  if (existing && c.ifUnmodifiedSince) {
+    const since = Date.parse(c.ifUnmodifiedSince);
+    // HTTP dates have 1-second precision.
+    if (!Number.isNaN(since) && Math.floor(Date.parse(existing.modifiedTime ?? "") / 1000) > Math.floor(since / 1000)) fail();
+  }
 }
 
 /**
@@ -168,49 +244,82 @@ export class Store {
 
   // ---- other files ----
 
-  async listFiles(site: Site) {
-    const folderId = await this.siteFolder(site);
-    const files = await this.drive.children(folderId);
-    return files
-      .filter((f) => f.mimeType !== FOLDER_MIME && !isReserved(f.name))
-      .map((f) => ({ name: f.name, size: Number(f.size ?? 0), modifiedTime: f.modifiedTime, contentType: f.mimeType }));
+  /**
+   * The folder at `dirs` inside the site folder. With `create`, missing folders are made;
+   * otherwise a missing folder gives null. Folder ids are cached in the user record.
+   */
+  private async dir(site: Site, dirs: string[], create: boolean): Promise<string | null> {
+    let id = await this.siteFolder(site);
+    if (dirs.length === 0) return id;
+    const rec = this.rec(site.host);
+    rec.folders ??= {};
+    for (let i = 0; i < dirs.length; i++) {
+      const key = dirs.slice(0, i + 1).join("/");
+      const cached = rec.folders[key];
+      if (cached && (await this.drive.get(cached))?.parents?.includes(id)) {
+        id = cached;
+        continue;
+      }
+      const found = create ? (await this.drive.findOrCreateFolder(dirs[i], id)).folder : await this.drive.findChild(id, dirs[i], true);
+      if (!found) return null;
+      rec.folders[key] = found.id;
+      this.dirty = true;
+      id = found.id;
+    }
+    return id;
   }
 
-  private async findFile(site: Site, name: string) {
-    return this.drive.findChild(await this.siteFolder(site), name);
+  private async findFile(site: Site, path: string[]): Promise<DriveFile | null> {
+    const folderId = await this.dir(site, path.slice(0, -1), false);
+    return folderId ? this.drive.findChild(folderId, path[path.length - 1]) : null;
   }
 
-  async getFile(site: Site, name: string): Promise<Response> {
-    const f = await this.findFile(site, name);
+  /** Files directly inside a folder (the site folder by default), and the names of its subfolders. */
+  async listDir(site: Site, dirs: string[] = []): Promise<{ files: FileInfo[]; folders: string[] }> {
+    const folderId = await this.dir(site, dirs, false);
+    if (!folderId) return { files: [], folders: [] };
+    const children = await this.drive.children(folderId);
+    return {
+      files: children.filter((f) => f.mimeType !== FOLDER_MIME && !(dirs.length === 0 && isReserved(f.name))).map((f) => info(f)),
+      folders: children.filter((f) => f.mimeType === FOLDER_MIME).map((f) => f.name).sort(),
+    };
+  }
+
+  /** Files in the site folder itself (what teather.js files.list() has always returned). */
+  async listFiles(site: Site): Promise<Omit<FileInfo, "version">[]> {
+    return (await this.listDir(site)).files.map(({ version: _v, ...f }) => f);
+  }
+
+  async getFile(site: Site, path: string | string[]): Promise<Response> {
+    const f = await this.findFile(site, checkFilePath(path));
     if (!f) throw new HttpError(404, "File not found", "not_found");
     const body = await this.drive.download(f.id);
-    return new Response(body.body, {
-      headers: {
-        "Content-Type": f.mimeType || "application/octet-stream",
-        "Last-Modified": new Date(f.modifiedTime ?? Date.now()).toUTCString(),
-        "Content-Disposition": `attachment; filename="${f.name}"`,
-      },
-    });
+    const headers: Record<string, string> = {
+      "Content-Type": f.mimeType || "application/octet-stream",
+      "Last-Modified": new Date(f.modifiedTime ?? Date.now()).toUTCString(),
+      "Content-Disposition": `attachment; filename="${f.name}"`,
+    };
+    if (f.version) headers.ETag = `"${f.version}"`;
+    return new Response(body.body, { headers });
   }
 
-  async putFile(site: Site, name: string, body: ArrayBuffer, contentType: string, ifUnmodifiedSince: string | null) {
+  async putFile(site: Site, path: string | string[], body: ArrayBuffer, contentType: string, cond: WriteConditions | string | null = {}) {
+    // Older callers passed If-Unmodified-Since as a plain string.
+    const c: WriteConditions = typeof cond === "string" || cond === null ? { ifUnmodifiedSince: cond } : cond;
     if (body.byteLength > MAX_FILE_BYTES) throw new HttpError(413, "Files may be at most 10 MB", "file_too_large");
-    const folderId = await this.siteFolder(site);
+    const parts = checkFilePath(path);
+    const folderId = (await this.dir(site, parts.slice(0, -1), true))!;
+    const name = parts[parts.length - 1];
     const existing = await this.drive.findChild(folderId, name);
-    if (existing && ifUnmodifiedSince) {
-      const since = Date.parse(ifUnmodifiedSince);
-      // HTTP dates have 1-second precision.
-      if (!Number.isNaN(since) && Math.floor(Date.parse(existing.modifiedTime ?? "") / 1000) > Math.floor(since / 1000)) {
-        throw new HttpError(412, "The file was changed since you last read it", "precondition_failed");
-      }
-    }
+    checkConditions(existing, c);
     const f = existing ? await this.drive.update(existing.id, contentType, body) : await this.drive.create(folderId, name, contentType, body);
-    return { name: f.name, size: Number(f.size ?? body.byteLength), modifiedTime: f.modifiedTime, contentType: f.mimeType };
+    return info(f, body.byteLength);
   }
 
-  async deleteFile(site: Site, name: string) {
-    const f = await this.findFile(site, name);
+  async deleteFile(site: Site, path: string | string[], cond: WriteConditions = {}) {
+    const f = await this.findFile(site, checkFilePath(path));
     if (!f) throw new HttpError(404, "File not found", "not_found");
+    checkConditions(f, cond);
     await this.drive.trash(f.id);
   }
 

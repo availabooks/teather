@@ -109,6 +109,10 @@
         "<h3>" + esc(s.name) + "</h3>" +
         '<p class="muted small">' + esc(s.description) + (s.url ? ' <a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(s.url) + "</a>" : "") + "</p>" +
         warnings + (warnings ? '<p><button class="link" data-act="dismiss">Dismiss warnings</button></p>' : "") +
+        (s.serverAccess
+          ? '<p class="small">' + esc(s.name) + "'s server can read and write this folder while you are away. " +
+            '<button class="link" data-act="revoke-server">Take back server access</button></p>'
+          : "") +
         '<div class="row">' +
         (s.known ? '<button data-act="view">View data</button><button data-act="download">Download all</button>' : "") +
         '<a class="button" href="' + esc(s.folderUrl) + '" target="_blank" rel="noopener">Open in Drive</a>' +
@@ -215,6 +219,11 @@
       if (act === "view") await showDetail(card, host);
       else if (act === "hide") { openSite = null; card.querySelector(".detail").innerHTML = ""; }
       else if (act === "download") await download(host);
+      else if (act === "revoke-server") {
+        if (!confirm(name + "'s server will no longer be able to read or write this folder. Your files stay where they are.")) return;
+        await api("DELETE", "/api/sites/" + encodeURIComponent(host) + "/server-access");
+        render();
+      }
       else if (act === "dismiss") { await api("DELETE", "/api/sites/" + encodeURIComponent(host) + "/warnings"); render(); }
       else if (act === "delete") {
         if (!confirm("Delete everything " + name + " saved, and sign out of " + name + " on every device?\n\nThe folder goes to your Google Drive trash, where you can recover it for 30 days.")) return;

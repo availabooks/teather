@@ -1,5 +1,5 @@
 import { HttpError, json } from "../../../src/env";
-import { deleteSiteSessions } from "../../../src/db";
+import { deleteSiteSessions, listServerGrants, revokeServerAccess } from "../../../src/db";
 import { validateBatch } from "../../../src/merge";
 import { readJson, requireManage, route, type Ctx } from "../../../src/http";
 import { siteForHost } from "../../../src/sites";
@@ -12,6 +12,7 @@ import { checkFileName, Store } from "../../../src/store";
  * PUT    /api/sites/:host                  merge {items} into its state.json
  * DELETE /api/sites/:host                  delete & disconnect (folder to trash, site signed out everywhere)
  * DELETE /api/sites/:host/warnings         dismiss warnings
+ * DELETE /api/sites/:host/server-access    take back the site server's access to the folder
  * GET    /api/sites/:host/files/:name      download a file
  * DELETE /api/sites/:host/files/:name      move a file to trash
  */
@@ -40,7 +41,9 @@ export const onRequestGet = route(async (ctx) => {
   const [host, sub, name, ...rest] = parts(ctx);
   return withStore(ctx, async (store) => {
     if (!host) {
-      return json({ email: store.user.email, name: store.user.name, picture: store.user.picture, sites: await store.listSites() });
+      const granted = new Set((await listServerGrants(ctx.env, store.user.sub)).map((g) => g.host));
+      const sites = (await store.listSites()).map((s) => ({ ...s, serverAccess: granted.has(s.host) }));
+      return json({ email: store.user.email, name: store.user.name, picture: store.user.picture, sites });
     }
     const site = knownSite(host);
     if (!sub) {
@@ -73,7 +76,12 @@ export const onRequestDelete = route(async (ctx) => {
     if (!sub) {
       // Sign the site out first, so its browser copies can't upload the data again.
       await deleteSiteSessions(ctx.env, store.user.sub, host);
+      await revokeServerAccess(ctx.env, store.user.sub, host);
       await store.deleteSite(host);
+      return json({ ok: true });
+    }
+    if (sub === "server-access" && !name) {
+      await revokeServerAccess(ctx.env, store.user.sub, host);
       return json({ ok: true });
     }
     if (sub === "warnings" && !name) {

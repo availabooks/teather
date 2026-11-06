@@ -179,17 +179,76 @@ const list = await Teather.files.list(); // [{ name, size, modifiedTime, content
 await Teather.files.remove("export-2026-11.json"); // moves it to the user's Drive trash
 ```
 
-- Names: letters, digits, `.`, `_` and `-`, up to 100 characters, no folders. `README.md`, `state.json` and names
-  starting with `state.broken-` are reserved.
+- Names: letters, digits, `.`, `_` and `-`, up to 100 characters. A name can also be a path of up to 5 such names
+  joined by `/`, such as `drafts/ch1.json`; Teather makes the folders. At the top level, `README.md`, `state.json` and
+  names starting with `state.broken-` are reserved. `files.list()` lists only the top level.
 - `put` accepts a Blob, ArrayBuffer, typed array or string, up to 10 MB, and resolves to the file's metadata.
-- To avoid overwriting a newer copy from another device, pass the `modifiedTime` you last saw:
-  `put(name, data, { ifUnmodifiedSince: file.modifiedTime })`. It fails with `e.code === "precondition_failed"` if
-  the file changed since.
+- To avoid overwriting a newer copy from another device, pass the `version` you last saw:
+  `put(name, data, { ifMatch: file.version })`, or `{ ifNoneMatch: "*" }` to only create a new file. The older
+  `{ ifUnmodifiedSince: file.modifiedTime }` still works. These fail with `e.code === "precondition_failed"` if the
+  file changed since.
 - `get` on a missing file fails with `e.code === "not_found"`.
 - Users can open, edit and delete these files in Drive. If the site must trust a file (for example work waiting to
   be submitted for a grade), sign or encrypt it with a key on the site's own server and check it when reading.
 
-## Step 7: Moving existing localStorage data into Teather
+## Step 7: Know who signed in, on your own server (optional)
+
+A site with its own server can use Teather sign-in as its login. In the browser, get a short-lived signed token and
+send it to your server:
+
+```js
+await Teather.signIn();                 // in a click handler
+const idToken = await Teather.idToken(); // a JWT, valid for 5 minutes
+await fetch("/api/login", { method: "POST", body: JSON.stringify({ idToken }) });
+```
+
+On the server, check it before trusting it:
+
+- The signature, with the keys at `https://teather.pages.dev/.well-known/jwks.json` (Ed25519, `alg: "EdDSA"`; pick
+  the key by the header's `kid`, and fetch again when you see a new `kid`).
+- `iss` is `https://teather.pages.dev`, `aud` is your site's host (for example `availabooks.com`) and `exp` hasn't
+  passed.
+- Claims: `sub` (the person's stable Google account id; use it as the key, not the email), `email`, `email_verified`
+  (always `true`: Teather refuses Google accounts whose email isn't confirmed), `name`, `given_name`, `family_name`,
+  `picture`, `origin` (the page that asked), `iat`, `exp` and `jti`.
+
+Then create your own session. The token is only proof of who signed in; don't keep it.
+
+## Step 8: Let your server use a person's folder (optional, needs registration)
+
+Some sites need their server to save to a person's folder while that person is away (for example, grades for an
+instructor while students submit work). This needs two things in the site's registration (Step 1): `serverKeys`, the
+public half of an Ed25519 key your server signs with, and `serverAccess`, the text shown to people when they're asked.
+
+1. **Ask the person.** In a click handler:
+
+   ```js
+   const allowed = await Teather.allowServerAccess(); // true, or false if they closed the window
+   ```
+
+   Teather shows its own page explaining what your server will do, then Google sign-in. The permission is recorded
+   only after that sign-in, and it also signs them in to your site (check `Teather.user()` afterwards: they may have
+   picked a different Google account). People can take it back at any time on `/manage`.
+
+2. **Call Teather from your server.** Sign a fresh token for each request with your private key: header
+   `{ alg: "EdDSA", kid }`, claims `{ iss: <your host>, aud: "https://teather.pages.dev", iat, exp, jti }`, with
+   `exp` at most 120 seconds after `iat` and a random `jti` of 16 to 100 characters. Each token works once. Send it
+   as `Authorization: Bearer <token>`, with no `Origin` header. `:sub` is the person's `sub` from their identity token.
+
+   | Request | Does |
+   |---|---|
+   | `GET /api/server/users/:sub/grant` | `{ granted }`: whether they have given permission |
+   | `GET /api/server/users/:sub/list?dir=a/b` | `{ files: [{ name, size, modifiedTime, contentType, version }], folders: [names] }` |
+   | `GET /api/server/users/:sub/files/<path>` | the file, with `ETag: "<version>"` |
+   | `PUT /api/server/users/:sub/files/<path>` | saves the raw body; `If-Match: "<version>"` or `If-None-Match: *`; returns `{ file }` |
+   | `DELETE /api/server/users/:sub/files/<path>` | moves it to their Drive trash; optional `If-Match` |
+
+   Errors your server should handle: `403 no_server_grant` (no permission, or it was taken back), `410
+   user_disconnected` (their Google access ended), `412 precondition_failed`, `507 drive_full`, `401
+   bad_server_token`. Keep your own copy of anything you write, and retry later: people can be disconnected for a
+   while.
+
+## Step 9: Moving existing localStorage data into Teather
 
 If the site already keeps data in its own localStorage, copy it once on load. Don't overwrite anything Teather
 already has:
@@ -206,7 +265,7 @@ if (old !== null) localStorage.removeItem("myapp-settings");
 If a user has data in Drive from another device and also local data from before signing in, the newer write of
 each key wins when they sign in.
 
-## Step 8: Test
+## Step 10: Test
 
 - **Against the live Teather:** ask for a `http://localhost:<port>` origin to be added in Step 1, serve the site on
   that port and sign in. The data goes into the site's real Drive folder.
@@ -230,7 +289,9 @@ Promises from Teather reject with an `Error` that has `code`, `message` and (for
 | `offline` | Teather couldn't be reached; changes are kept and retried. |
 | `value_too_large`, `state_too_large`, `file_too_large` | Over the limits above. |
 | `bad_key`, `bad_name`, `reserved_name` | Key or file name not allowed. |
-| `precondition_failed` | `ifUnmodifiedSince` check failed. |
+| `precondition_failed` | `ifMatch`, `ifNoneMatch` or `ifUnmodifiedSince` check failed. |
+| `email_unverified` | The Google account's email isn't confirmed, so sign-in was refused. |
+| `not_configured` | `idToken()`: this Teather server can't issue identity tokens. |
 | `not_found` | File doesn't exist. |
 
 ## Options
@@ -251,7 +312,7 @@ updatedAt })`, where `value: null` means deleted. A page can read it directly if
 ```ts
 type TeatherUser = { email: string; name: string | null; picture: string | null; host: string };
 type TeatherStatus = "signed-out" | "syncing" | "synced" | "offline" | "error";
-type TeatherFile = { name: string; size: number; modifiedTime: string; contentType: string };
+type TeatherFile = { name: string; size: number; modifiedTime: string; contentType: string; version?: string };
 
 declare global {
   interface Window {
@@ -272,12 +333,14 @@ declare global {
       pictureUrl(size?: number, user?: TeatherUser | null): string | null;
       sync(): Promise<void>;
       signIn(): Promise<TeatherUser | null>;
+      idToken(): Promise<string>;
+      allowServerAccess(): Promise<boolean>;
       signOut(opts?: { keepLocal?: boolean }): Promise<void>;
       files: {
         list(): Promise<TeatherFile[]>;
         get(name: string): Promise<Blob>;
         put(name: string, data: Blob | ArrayBuffer | ArrayBufferView | string,
-            opts?: { contentType?: string; ifUnmodifiedSince?: string }): Promise<TeatherFile>;
+            opts?: { contentType?: string; ifUnmodifiedSince?: string; ifMatch?: string; ifNoneMatch?: "*" }): Promise<TeatherFile>;
         remove(name: string): Promise<void>;
       };
     };
@@ -297,5 +360,8 @@ export {};
 - [ ] Signed-in state shown on load (`Teather.user()`) and on `onAuthChange`; sign-out button
 - [ ] Sync status shown (optional but recommended)
 - [ ] Existing localStorage data moved over once (if any)
+- [ ] If your server uses `idToken()`: signature, `iss`, `aud` and `exp` checked; sessions keyed by `sub`
+- [ ] If your server uses people's folders: `serverAccess` text registered, `allowServerAccess()` asked in a click,
+      and `no_server_grant` / `user_disconnected` handled
 - [ ] Tested signed out, signing in, across two browsers, and signing out
 - [ ] The site's privacy text says it saves data in the user's Google Drive through Teather

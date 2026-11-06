@@ -66,7 +66,8 @@ npm run db:migrate:local
 npx wrangler pages dev --port 8788
 ```
 
-- `.dev.vars` needs `DEV=1`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `TOKEN_ENC_KEY`.
+- `.dev.vars` needs `DEV=1`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `TOKEN_ENC_KEY`. To test identity
+  tokens, also set `ID_SIGNING_KEY` (a private Ed25519 JWK, as one line of JSON) and `ID_SIGNING_KID`.
 - `DEV=1` allows any `http://localhost` origin.
 - To test as a separate site, open [public/demo.html](public/demo.html) from another port, for example
   `npx serve public -l 3000`, then go to `http://localhost:3000/demo.html`.
@@ -75,7 +76,10 @@ npx wrangler pages dev --port 8788
 
 The first time:
 1. Set up Google as described in [docs/google-setup.md](docs/google-setup.md).
-2. Set the three secrets on the Pages project.
+2. Set the secrets on the Pages project: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `TOKEN_ENC_KEY`, and for
+   identity tokens `ID_SIGNING_KEY` and `ID_SIGNING_KID` (optionally `ID_SIGNING_OLD_PUBLIC` while rotating keys).
+   Make a signing key with
+   `node -e "const k=require('crypto').generateKeyPairSync('ed25519').privateKey.export({format:'jwk'});console.log(JSON.stringify(k))"`.
 3. Run `npm run db:migrate:remote`.
 
 Then, and for every update:

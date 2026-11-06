@@ -116,6 +116,8 @@
       init.body = opts.raw;
       if (opts.contentType) headers["Content-Type"] = opts.contentType;
       if (opts.ifUnmodifiedSince) headers["If-Unmodified-Since"] = opts.ifUnmodifiedSince;
+      if (opts.ifMatch) headers["If-Match"] = '"' + opts.ifMatch + '"';
+      if (opts.ifNoneMatch) headers["If-None-Match"] = opts.ifNoneMatch;
     } else if (body !== undefined) {
       headers["Content-Type"] = "application/json";
       init.body = JSON.stringify(body);
@@ -395,51 +397,31 @@
      */
     signIn: function () {
       ensure();
-      var poll = randomId();
-      var url = base + "/auth/start?origin=" + encodeURIComponent(location.origin) + "&poll=" + poll;
-      var popup = global.open(url, "teather-signin", "width=520,height=680");
-      if (!popup) return Promise.reject(TeatherError("popup_blocked", "The sign-in window was blocked. Please allow pop-ups for this site."));
-      return new Promise(function (resolve, reject) {
-        var done = false;
-        var started = Date.now();
-        var timer = null;
-        function finish(payload) {
-          if (done) return;
-          done = true;
-          clearTimeout(timer);
-          global.removeEventListener("message", onMessage);
-          if (payload.error) return reject(TeatherError(payload.error, payload.message));
-          meta.token = payload.token;
-          meta.email = payload.email;
-          meta.name = payload.name || null;
-          meta.picture = payload.picture || null;
-          meta.host = payload.host;
-          saveMeta();
-          setStatus("syncing");
-          emit("auth", Teather.user());
-          pull().catch(noop).then(function () { resolve(Teather.user()); });
-        }
-        function onMessage(e) {
-          if (e.origin === base && e.data && e.data.type === "teather-auth") finish(e.data);
-        }
-        // Google's pages often cut the popup's link back to this page, so also collect the result from Teather.
-        async function check() {
-          if (done) return;
-          if (Date.now() - started > SIGNIN_TIMEOUT) return finish({ error: "timeout", message: "Sign-in took too long. Please try again." });
-          try {
-            var r = await fetch(base + "/api/auth/result", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ poll: poll }),
-            });
-            var body = await r.json();
-            if (r.ok && !body.pending) return finish(body);
-          } catch (e) { /* try again */ }
-          timer = setTimeout(check, 1500);
-        }
-        global.addEventListener("message", onMessage);
-        timer = setTimeout(check, 2000);
-      });
+      return popupAuth("").then(function () { return Teather.user(); });
+    },
+
+    /**
+     * A short-lived signed token (JWT) saying who is signed in, for the site's own server.
+     * Send it to your server and check it there against https://teather.pages.dev/.well-known/jwks.json:
+     * aud is your site's host and it expires after 5 minutes. Resolves to the token string.
+     */
+    idToken: async function () {
+      requireSignIn();
+      return (await api("POST", "/api/token")).token;
+    },
+
+    /**
+     * Ask the student to let this site's server read and write the site's folder while they are away
+     * (only for sites registered for it). Opens a Teather page that explains this, then Google sign-in.
+     * Call it directly from a click handler. Resolves to true if they allowed it, false if they closed the window.
+     * It also signs them in (possibly as a different Google account), like signIn().
+     */
+    allowServerAccess: function () {
+      ensure();
+      return popupAuth("&grant=server").then(
+        function (payload) { return !!payload.serverAccess; },
+        function (e) { if (e && (e.code === "timeout" || e.code === "cancelled")) return false; throw e; }
+      );
     },
 
     /** Sign out of Teather on this site. Clears this browser's copy unless {keepLocal: true}. */
@@ -457,21 +439,79 @@
       /** Resolves to a Blob. */
       get: async function (name) {
         requireSignIn();
-        var res = await api("GET", "/api/files/" + encodeURIComponent(name), undefined, { response: true });
+        var res = await api("GET", "/api/files/" + filePath(name), undefined, { response: true });
         return res.blob();
       },
-      /** data: Blob, ArrayBuffer, typed array or string. opts: {contentType, ifUnmodifiedSince} */
+      /**
+       * name may be a path such as "drafts/ch1.json" (up to 5 parts). data: Blob, ArrayBuffer, typed array or string.
+       * opts: {contentType, ifUnmodifiedSince, ifMatch: <file.version>, ifNoneMatch: "*"}. Resolves to the file's info, including `version`.
+       */
       put: async function (name, data, opts) {
         requireSignIn();
         opts = opts || {};
         var type = opts.contentType || (data && data.type) || (typeof data === "string" ? "text/plain" : "application/octet-stream");
-        return (await api("PUT", "/api/files/" + encodeURIComponent(name), undefined, {
+        return (await api("PUT", "/api/files/" + filePath(name), undefined, {
           raw: data, contentType: type, ifUnmodifiedSince: opts.ifUnmodifiedSince,
+          ifMatch: opts.ifMatch, ifNoneMatch: opts.ifNoneMatch,
         })).file;
       },
-      remove: async function (name) { requireSignIn(); await api("DELETE", "/api/files/" + encodeURIComponent(name)); },
+      remove: async function (name) { requireSignIn(); await api("DELETE", "/api/files/" + filePath(name)); },
     },
   };
+
+  /** Run the Teather sign-in popup. `extra` is added to the /auth/start query. Resolves with the result payload. */
+  function popupAuth(extra) {
+    var poll = randomId();
+    var url = base + "/auth/start?origin=" + encodeURIComponent(location.origin) + "&poll=" + poll + extra;
+    var popup = global.open(url, "teather-signin", "width=520,height=680");
+    if (!popup) return Promise.reject(TeatherError("popup_blocked", "The sign-in window was blocked. Please allow pop-ups for this site."));
+    return new Promise(function (resolve, reject) {
+      var done = false;
+      var started = Date.now();
+      var timer = null;
+      function finish(payload) {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        global.removeEventListener("message", onMessage);
+        if (payload.error) return reject(TeatherError(payload.error, payload.message));
+        meta.token = payload.token;
+        meta.email = payload.email;
+        meta.name = payload.name || null;
+        meta.picture = payload.picture || null;
+        meta.host = payload.host;
+        saveMeta();
+        setStatus("syncing");
+        emit("auth", Teather.user());
+        pull().catch(noop).then(function () { resolve(payload); });
+      }
+      function onMessage(e) {
+        if (e.origin === base && e.data && e.data.type === "teather-auth") finish(e.data);
+      }
+      // Google's pages often cut the popup's link back to this page, so also collect the result from Teather.
+      async function check() {
+        if (done) return;
+        if (Date.now() - started > SIGNIN_TIMEOUT) return finish({ error: "timeout", message: "Sign-in took too long. Please try again." });
+        try {
+          var r = await fetch(base + "/api/auth/result", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ poll: poll }),
+          });
+          var body = await r.json();
+          if (r.ok && !body.pending) return finish(body);
+        } catch (e) { /* try again */ }
+        timer = setTimeout(check, 1500);
+      }
+      global.addEventListener("message", onMessage);
+      timer = setTimeout(check, 2000);
+    });
+  }
+
+  /** A file name or path ("courses/abc/roster.json") for a URL, one part at a time. */
+  function filePath(name) {
+    return String(name).split("/").map(encodeURIComponent).join("/");
+  }
 
   function ensure() { if (!started) Teather.init(); }
   function requireSignIn() {

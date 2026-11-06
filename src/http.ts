@@ -14,8 +14,8 @@ export function corsHeaders(origin: string): Record<string, string> {
   return {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "GET, PUT, POST, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Authorization, Content-Type, If-Unmodified-Since",
-    "Access-Control-Expose-Headers": "Last-Modified, Content-Disposition",
+    "Access-Control-Allow-Headers": "Authorization, Content-Type, If-Unmodified-Since, If-Match, If-None-Match",
+    "Access-Control-Expose-Headers": "Last-Modified, Content-Disposition, ETag",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",
   };

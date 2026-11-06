@@ -10,7 +10,23 @@ function fakeIdToken(claims: object): string {
 describe("idTokenClaims", () => {
   it("reads name and picture, including accented names", () => {
     const c = idTokenClaims(fakeIdToken({ sub: "1", email: "a@b.c", name: "Zoë Núñez", picture: "https://lh3.googleusercontent.com/a/x=s96-c" }));
-    expect(c).toEqual({ sub: "1", email: "a@b.c", name: "Zoë Núñez", picture: "https://lh3.googleusercontent.com/a/x=s96-c" });
+    expect(c).toEqual({
+      sub: "1",
+      email: "a@b.c",
+      emailVerified: false,
+      givenName: null,
+      familyName: null,
+      name: "Zoë Núñez",
+      picture: "https://lh3.googleusercontent.com/a/x=s96-c",
+    });
+  });
+
+  it("reads email_verified and the given and family names", () => {
+    const c = idTokenClaims(fakeIdToken({ sub: "1", email: "a@b.c", email_verified: true, given_name: "Zoë", family_name: "Núñez" }));
+    expect(c.emailVerified).toBe(true);
+    expect(c.givenName).toBe("Zoë");
+    expect(c.familyName).toBe("Núñez");
+    expect(idTokenClaims(fakeIdToken({ sub: "1", email: "a@b.c", email_verified: "true" })).emailVerified).toBe(true);
   });
 
   it("allows a missing profile", () => {

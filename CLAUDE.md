@@ -18,6 +18,12 @@ Read `README.md` first for how Teather works, and `public/integrate.md` for the 
   and cached Drive ids.
 - When a site's text in `src/sites.ts` changes, bump its `version` so students' READMEs are rewritten. Any new use of a
   student's data, such as an instructor reading it, must be explained there before it ships.
+- Sites can read who signed in on their own server with `POST /api/token` (an Ed25519 JWT; public keys at
+  `/.well-known/jwks.json`). Sign-in refuses Google accounts whose email isn't verified.
+- A site's server can use a person's folder through `/api/server/...` only with a row in `site_grants`, which is
+  written only by `/auth/callback` after a sign-in started from the explanation page (`/auth/start?grant=server`).
+  Don't add any other way to create a grant. The site proves itself with a single-use JWT signed by a key in its
+  `serverKeys` (private halves are the site's secrets, never in this repo).
 
 ## Sites that use Teather
 

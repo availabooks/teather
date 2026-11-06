@@ -75,7 +75,7 @@ export const SITES: Site[] = [
     name: "AvailaBooks",
     url: "https://availabooks.com",
     description:
-      "AvailaBooks publishes free online textbooks and runs courses that use them. Signing in to Teather is how you sign in to AvailaBooks, so AvailaBooks learns your name, email address and Google photo. It saves your reading settings, notes and highlights here. If you teach a course, that course's settings, class list, grades and students' finished work are kept here too.",
+      "AvailaBooks publishes free online textbooks and runs courses that use them. Signing in to Teather is how you sign in to AvailaBooks, so AvailaBooks learns your name, email address and Google photo. Your photo is shown to other readers next to notes you share and on your public page, unless you choose to show your initial instead (on your AvailaBooks profile page). It saves your reading settings, notes and highlights here. If you teach a course, that course's settings, class list, grades and students' finished work are kept here too.",
     stores: [
       "reading settings such as text size",
       "notes and highlights",
@@ -87,7 +87,7 @@ export const SITES: Site[] = [
       "If you teach a course, the \"courses\" folder is the main copy of its settings, class list and grades. AvailaBooks keeps a working copy, but deleting the folder or taking back AvailaBooks' access means changes stop reaching your Drive.",
     ],
     contact: "https://availabooks.com",
-    version: 2,
+    version: 3,
     serverKeys: [
       { kid: "availabooks-server-2026-11-06-b42db5", kty: "OKP", crv: "Ed25519", x: "NRtSpG3Neio9CLDOk8693O7qM_FeMshxjqP2ZqVBhyg" },
     ],

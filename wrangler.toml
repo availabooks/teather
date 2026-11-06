@@ -1,6 +1,6 @@
 name = "teather"
-# Gove.allen@gmail.com's account, where the Pages project and D1 database live (not the AvailaBooks account).
-account_id = "06ca8c2e4d5289a3f5fd31fb805bf78a"
+# The Cloudflare account (Gove.allen@gmail.com's, not the AvailaBooks one) is set by CLOUDFLARE_ACCOUNT_ID in .env:
+# Pages configs can't contain account_id.
 pages_build_output_dir = "public"
 compatibility_date = "2025-09-01"
 

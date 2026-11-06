@@ -152,6 +152,8 @@ signOutButton.addEventListener("click", () => Teather.signOut());
   `Teather.signOut({ keepLocal: true })` to keep the local copy.
 - If the user disconnects the site at teather.pages.dev/manage, or their session ends, the page is signed out the
   same way on its next request.
+- To send people to their data for your site, link to `https://teather.pages.dev/manage?site=<your host>`
+  (the `host` you registered, e.g. `?site=loomination.org`). That site's data opens once they sign in.
 - Sessions last 60 days and renew when used.
 - Show profile photos with `<img referrerpolicy="no-referrer">`; Google refuses some photo requests that carry a
   referrer.

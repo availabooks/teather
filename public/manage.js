@@ -4,7 +4,11 @@
   var token = null;
   try { token = localStorage.getItem(TOKEN_KEY); } catch (e) {}
   var $ = function (id) { return document.getElementById(id); };
-  var openSite = null; // host whose details are showing
+  // Host whose details are showing. A site can link straight to its own data
+  // with /manage?site=<host>; that card opens and scrolls into view once.
+  var openSite = null;
+  var scrollTo = null;
+  try { openSite = scrollTo = new URLSearchParams(location.search).get("site") || null; } catch (e) {}
 
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) { return "&#" + c.charCodeAt(0) + ";"; });
@@ -115,7 +119,10 @@
     }).join("");
     if (openSite) {
       var card = document.querySelector('.card[data-host="' + CSS.escape(openSite) + '"]');
-      if (card) showDetail(card, openSite);
+      if (card) {
+        showDetail(card, openSite);
+        if (scrollTo === openSite) { card.scrollIntoView({ block: "start" }); scrollTo = null; }
+      }
     }
   }
 

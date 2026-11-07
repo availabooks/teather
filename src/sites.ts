@@ -78,23 +78,26 @@ export const SITES: Site[] = [
       "AvailaBooks publishes free online textbooks and runs courses that use them. Signing in to Teather is how you sign in to AvailaBooks, so AvailaBooks learns your name, email address and Google photo. Your photo is shown to other readers next to notes you share and on your public page, unless you choose to show your initial instead (on your AvailaBooks profile page). It saves your reading settings, notes and highlights here. If you teach a course, that course's settings, class list, grades and students' finished work are kept here too.",
     stores: [
       "reading settings such as text size",
-      "notes and highlights",
+      "notes and highlights you write, in the \"notes\" folder (one folder per book)",
       "copies of work waiting to be submitted",
       "for instructors: each course's settings, class list, grades and students' finished work, in the \"courses\" folder",
     ],
     removalNotes: [
       "Files whose names start with \"pending-\" are work you have not submitted yet. If you delete them before submitting, that work is lost.",
       "If you teach a course, the \"courses\" folder is the main copy of its settings, class list and grades. AvailaBooks keeps a working copy, but deleting the folder or taking back AvailaBooks' access means changes stop reaching your Drive.",
+      "The \"notes\" folder is the main copy of your notes and highlights. AvailaBooks keeps a working copy so it can show notes you share to other readers. If you delete the folder, your notes stay in AvailaBooks until you choose \"Reload from Drive\" on your AvailaBooks notes page, which removes them there too.",
     ],
     contact: "https://availabooks.com",
-    version: 3,
+    version: 4,
     serverKeys: [
       { kid: "availabooks-server-2026-11-06-b42db5", kty: "OKP", crv: "Ed25519", x: "NRtSpG3Neio9CLDOk8693O7qM_FeMshxjqP2ZqVBhyg" },
     ],
     serverAccess: {
       summary:
-        "AvailaBooks keeps the courses you teach in your Teather folder. Students submit work and earn grades when you aren't online, so AvailaBooks' server needs to save those to your folder for you.",
+        "AvailaBooks keeps your notes and highlights, and the courses you teach, in your Teather folder. Notes can be written from any device, and students submit work and earn grades when you aren't online, so AvailaBooks' server needs to save those to your folder for you.",
       uses: [
+        "your notes and highlights, and the details of note sets you own (title, who they're shared with, and which courses can see them)",
+        "it reads your notes back to restore them, including any changes you make to them in Drive",
         "course settings: title, books, dates and assignments",
         "the class list and invitations",
         "each student's grades",

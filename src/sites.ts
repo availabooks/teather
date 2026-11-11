@@ -85,10 +85,10 @@ export const SITES: Site[] = [
     removalNotes: [
       "Files whose names start with \"pending-\" are work you have not submitted yet. If you delete them before submitting, that work is lost.",
       "If you teach a course, the \"courses\" folder is the main copy of its settings, class list and grades. AvailaBooks keeps a working copy, but deleting the folder or taking back AvailaBooks' access means changes stop reaching your Drive.",
-      "The \"notes\" folder is the main copy of your notes and highlights. AvailaBooks keeps a working copy so it can show notes you share to other readers. If you delete the folder, your notes stay in AvailaBooks until you choose \"Reload from Drive\" on your AvailaBooks notes page, which removes them there too.",
+      "The \"notes\" folder is the only copy of your private notes and highlights: AvailaBooks doesn't keep them. If you delete it, they are gone. Note sets you share with other readers or with a course are also kept by AvailaBooks, so they can be shown to them.",
     ],
     contact: "https://availabooks.com",
-    version: 4,
+    version: 5,
     serverKeys: [
       { kid: "availabooks-server-2026-11-06-b42db5", kty: "OKP", crv: "Ed25519", x: "NRtSpG3Neio9CLDOk8693O7qM_FeMshxjqP2ZqVBhyg" },
     ],

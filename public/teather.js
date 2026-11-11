@@ -1,8 +1,8 @@
 /*!
  * teather.js: save a student's data in their own Google Drive, through Teather.
- * https://teather.pages.dev
+ * https://teather.technologylearningcompany.com
  *
- *   <script defer src="https://teather.pages.dev/v1/teather.js"></script>
+ *   <script defer src="https://teather.technologylearningcompany.com/v1/teather.js"></script>
  *   Teather.init();                          // options: {pushDelay: ms (default 1000)}
  *   Teather.set("theme", "dark");            // saved locally at once, synced shortly after
  *   Teather.get("theme");                    // -> "dark"
@@ -17,7 +17,7 @@
   "use strict";
 
   var script = document.currentScript;
-  var DEFAULT_BASE = script && script.src ? new URL(script.src).origin : "https://teather.pages.dev";
+  var DEFAULT_BASE = script && script.src ? new URL(script.src).origin : "https://teather.technologylearningcompany.com";
   var BATCH = 50;
   var pushDelay = 1000;
   var FOCUS_PULL_MS = 15000;
@@ -293,7 +293,7 @@
 
   // ---- public API ----
   var Teather = {
-    /** Options: {base: "https://teather.pages.dev", prefix: "teather:", pushDelay: 1000} */
+    /** Options: {base: "https://teather.technologylearningcompany.com", prefix: "teather:", pushDelay: 1000} */
     init: function (opts) {
       opts = opts || {};
       if (opts.base) base = opts.base.replace(/\/$/, "");
@@ -403,7 +403,7 @@
 
     /**
      * A short-lived signed token (JWT) saying who is signed in, for the site's own server.
-     * Send it to your server and check it there against https://teather.pages.dev/.well-known/jwks.json:
+     * Send it to your server and check it there against https://teather.technologylearningcompany.com/.well-known/jwks.json:
      * aud is your site's host and it expires after 5 minutes. Resolves to the token string.
      */
     idToken: async function () {

@@ -2,9 +2,9 @@ import type { Site } from "./sites";
 import { folderUrl } from "./drive";
 
 /** Bump when the root README template changes so every student's copy is rewritten. */
-export const ROOT_README_VERSION = 1;
+export const ROOT_README_VERSION = 2;
 
-export const TEATHER_URL = "https://teather.pages.dev";
+export const TEATHER_URL = "https://teather.technologylearningcompany.com";
 const MANAGE_URL = `${TEATHER_URL}/manage`;
 
 export function rootReadme(sites: { site: Site; folderId: string }[]): string {

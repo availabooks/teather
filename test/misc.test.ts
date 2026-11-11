@@ -39,9 +39,9 @@ describe("sites", () => {
 
   it("checks API origins", () => {
     const env = { DEV: "0" } as Env;
-    expect(originAllowed("https://teather.pages.dev", "https://teather.pages.dev", env)).toBe(true);
-    expect(originAllowed("https://loomination.org", "https://teather.pages.dev", env)).toBe(true);
-    expect(originAllowed("https://evil.example", "https://teather.pages.dev", env)).toBe(false);
+    expect(originAllowed("https://teather.technologylearningcompany.com", "https://teather.technologylearningcompany.com", env)).toBe(true);
+    expect(originAllowed("https://loomination.org", "https://teather.technologylearningcompany.com", env)).toBe(true);
+    expect(originAllowed("https://evil.example", "https://teather.technologylearningcompany.com", env)).toBe(false);
   });
 
   it("has a unique host for each site", () => {

@@ -23,10 +23,10 @@ Agree to the policy and click **Create**.
 Setup doesn't ask for these. Open **Branding** in the left menu and add them there:
 - App logo: **leave it empty for now.** Any logo means Google requires verification before the app can be published
   (step 4). When you're ready for verification (step 5), upload `public/logo-120.png` (120×120 PNG).
-- App home page: `https://teather.pages.dev`
-- Privacy policy: `https://teather.pages.dev/privacy.html`
-- Terms of service: `https://teather.pages.dev/terms.html`
-- Authorized domains: `teather.pages.dev` (see the note in step 5)
+- App home page: `https://teather.technologylearningcompany.com`
+- Privacy policy: `https://teather.technologylearningcompany.com/privacy.html`
+- Terms of service: `https://teather.technologylearningcompany.com/terms.html`
+- Authorized domains: `technologylearningcompany.com`
 
 They aren't required to create the client in step 3, but Google needs them before it will verify the app's branding,
 and the privacy page should be deployed first.
@@ -55,7 +55,8 @@ Open **Clients → Create client**.
 - Application type: **Web application**
 - Name: `Teather`
 - Authorized redirect URIs:
-  - `https://teather.pages.dev/auth/callback`
+  - `https://teather.technologylearningcompany.com/auth/callback`
+  - `https://teather.pages.dev/auth/callback` (the old address, still used by sites that load `teather.js` from it)
   - `http://localhost:8788/auth/callback` (for local development)
 - Authorized JavaScript origins: **leave empty.** That setting is for apps whose web pages get tokens from Google
   directly in the browser. In Teather, the server gets the tokens after Google redirects to `/auth/callback`, so only the
@@ -81,12 +82,9 @@ This matters. While the app is in **Testing**, Google:
 Until Google verifies the branding, sign-in still works, but students see the raw domain on the consent screen instead
 of the Teather name. To verify:
 
-1. Prove you own `teather.pages.dev` in Google Search Console. Choose the "URL prefix" property and use the HTML file
-   method: put the file Google gives you in `public/` and deploy.
+1. Prove you own `teather.technologylearningcompany.com` in Google Search Console. Choose the "URL prefix" property and use the HTML file
+   method: Google gives you a file (Teather's is served by `functions/googlefc46433408f3371e.html.ts`); serve it and deploy.
 2. Then submit for verification under **Verification Center**.
-
-If Google won't accept `teather.pages.dev` as an authorized domain, point a domain you own at the Pages project and use
-that instead.
 
 ## 6. Give the secrets to Cloudflare
 

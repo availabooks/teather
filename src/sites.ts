@@ -117,7 +117,7 @@ export const DEV_SITE: Site = {
   description:
     "A site running on a developer's own computer. This folder holds test data and can be deleted.",
   stores: ["test data"],
-  contact: "https://teather.pages.dev",
+  contact: "https://teather.technologylearningcompany.com",
   version: 1,
 };
 

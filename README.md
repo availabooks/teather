@@ -3,8 +3,10 @@
 Free websites use Teather to save each student's data (settings, notes, highlights, drafts, copies of work) in the
 **student's own Google Drive**. The student owns it and can see it, and nobody pays for storage.
 
-- **Site:** https://teather.pages.dev (Cloudflare Pages project `teather`, with Pages Functions and D1)
-- **For students:** https://teather.pages.dev/manage
+- **Site:** https://teather.technologylearningcompany.com (Cloudflare Pages project `teather`, with Pages Functions and D1).
+  The old address, https://teather.pages.dev, serves the same project and keeps working for sites that already load
+  `teather.js` from it.
+- **For students:** https://teather.technologylearningcompany.com/manage
 - **First sites:** [Loomination](https://www.loomination.org) and [AvailaBooks](https://availabooks.com)
 
 ## How it works
@@ -38,7 +40,7 @@ removal warnings. Then deploy. Bump `version` whenever you change a site's text,
 ## Using it from a site
 
 ```html
-<script src="https://teather.pages.dev/v1/teather.js"></script>
+<script src="https://teather.technologylearningcompany.com/v1/teather.js"></script>
 <script>
   Teather.init();
   Teather.set("settings", { fontSize: 18 });   // local at once, synced about 1 second later
@@ -54,7 +56,7 @@ removal warnings. Then deploy. Bump `version` whenever you change a site's text,
 See the comments in [public/teather.js](public/teather.js) for the full API.
 
 The full guide for site builders and AI coding assistants is [public/integrate.md](public/integrate.md), served at
-https://teather.pages.dev/integrate.md (and listed in `/llms.txt`). Keep it in step with `teather.js`.
+https://teather.technologylearningcompany.com/integrate.md (and listed in `/llms.txt`). Keep it in step with `teather.js`.
 
 ## Development
 

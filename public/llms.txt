@@ -2,6 +2,6 @@
 
 > Teather lets free websites save each user's data (settings, notes, drafts, copies of work) in the user's own Google Drive, through one script tag and no backend.
 
-- [Integration guide](https://teather.pages.dev/integrate.md): everything needed to add Teather to a site, including registration, storage, sign-in, files, testing and a checklist.
-- [Client library](https://teather.pages.dev/v1/teather.js): the script sites load, with the full API in its comments.
-- [Privacy](https://teather.pages.dev/privacy.html) and [terms](https://teather.pages.dev/terms.html).
+- [Integration guide](https://teather.technologylearningcompany.com/integrate.md): everything needed to add Teather to a site, including registration, storage, sign-in, files, testing and a checklist.
+- [Client library](https://teather.technologylearningcompany.com/v1/teather.js): the script sites load, with the full API in its comments.
+- [Privacy](https://teather.technologylearningcompany.com/privacy.html) and [terms](https://teather.technologylearningcompany.com/terms.html).

@@ -8,7 +8,7 @@ import { SITES } from "../src/sites";
 import { checkConditions, checkDirPath, checkFilePath } from "../src/store";
 import type { DriveFile } from "../src/drive";
 
-const TEATHER = "https://teather.pages.dev";
+const TEATHER = "https://teather.technologylearningcompany.com";
 
 async function newKey(): Promise<{ privateText: string; publicJwk: JsonWebKey }> {
   const pair = (await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"])) as CryptoKeyPair;

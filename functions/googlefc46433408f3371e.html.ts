@@ -1,4 +1,5 @@
-// Google Search Console ownership check for teather.pages.dev (needed for Google's
+// Google Search Console ownership check for teather.technologylearningcompany.com
+// (and the old teather.pages.dev) (needed for Google's
 // sign-in branding verification). Served by a function because Pages redirects
 // static *.html paths to extensionless ones, which the check may not follow.
 // Keep this file: Google re-checks it periodically.

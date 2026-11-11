@@ -2,7 +2,7 @@
 
 This guide is for developers and AI coding assistants adding Teather to a site. It is self-contained: follow it
 top to bottom. For every function's exact signature, see the comments in
-https://teather.pages.dev/v1/teather.js.
+https://teather.technologylearningcompany.com/v1/teather.js.
 
 ## What Teather is
 
@@ -41,7 +41,7 @@ step in code.** Send the following to teather@technologylearningcompany.com:
   "Files whose names start with "pending-" are work you have not submitted yet."
 - **Contact**: a URL or email where students can ask about the site.
 
-This text goes into a `README.md` in the student's Drive folder and onto https://teather.pages.dev/manage, so write
+This text goes into a `README.md` in the student's Drive folder and onto https://teather.technologylearningcompany.com/manage, so write
 it for students, not developers.
 
 All of a site's origins share one Drive folder. Note that each origin still has its own localStorage, so a user
@@ -51,7 +51,7 @@ one canonical origin avoids confusion.
 ## Step 2: Add the script
 
 ```html
-<script src="https://teather.pages.dev/v1/teather.js"></script>
+<script src="https://teather.technologylearningcompany.com/v1/teather.js"></script>
 ```
 
 - Always use the `/v1/` path. It stays backward compatible; a breaking change would go in `/v2/`.
@@ -64,12 +64,13 @@ one canonical origin avoids confusion.
 If the site sends a Content-Security-Policy, allow:
 
 ```
-script-src  https://teather.pages.dev
-connect-src https://teather.pages.dev
+script-src  https://teather.technologylearningcompany.com
+connect-src https://teather.technologylearningcompany.com
 img-src     https://lh3.googleusercontent.com data:
 ```
 
-(`img-src` is only needed for profile pictures.) The sign-in popup opens `https://teather.pages.dev`; it works
+(`img-src` is only needed for profile pictures. Sites that already load the script from the old address,
+`https://teather.pages.dev`, keep working unchanged; it is the same service.) The sign-in popup opens `https://teather.technologylearningcompany.com`; it works
 even under `Cross-Origin-Opener-Policy: same-origin`, because the script also polls for the result.
 
 ## Step 3: Store data
@@ -150,9 +151,9 @@ signOutButton.addEventListener("click", () => Teather.signOut());
 - `signOut()` uploads pending changes, then **clears this browser's copy** of the site's data (emitting `onChange`
   with `source: "signout"` for each key). That is right for shared computers. Use
   `Teather.signOut({ keepLocal: true })` to keep the local copy.
-- If the user disconnects the site at teather.pages.dev/manage, or their session ends, the page is signed out the
+- If the user disconnects the site at teather.technologylearningcompany.com/manage, or their session ends, the page is signed out the
   same way on its next request.
-- To send people to their data for your site, link to `https://teather.pages.dev/manage?site=<your host>`
+- To send people to their data for your site, link to `https://teather.technologylearningcompany.com/manage?site=<your host>`
   (the `host` you registered, e.g. `?site=loomination.org`). That site's data opens once they sign in.
 - Sessions last 60 days and renew when used.
 - Show profile photos with `<img referrerpolicy="no-referrer">`; Google refuses some photo requests that carry a
@@ -204,9 +205,9 @@ await fetch("/api/login", { method: "POST", body: JSON.stringify({ idToken }) })
 
 On the server, check it before trusting it:
 
-- The signature, with the keys at `https://teather.pages.dev/.well-known/jwks.json` (Ed25519, `alg: "EdDSA"`; pick
+- The signature, with the keys at `https://teather.technologylearningcompany.com/.well-known/jwks.json` (Ed25519, `alg: "EdDSA"`; pick
   the key by the header's `kid`, and fetch again when you see a new `kid`).
-- `iss` is `https://teather.pages.dev`, `aud` is your site's host (for example `availabooks.com`) and `exp` hasn't
+- `iss` is `https://teather.technologylearningcompany.com`, `aud` is your site's host (for example `availabooks.com`) and `exp` hasn't
   passed.
 - Claims: `sub` (the person's stable Google account id; use it as the key, not the email), `email`, `email_verified`
   (always `true`: Teather refuses Google accounts whose email isn't confirmed), `name`, `given_name`, `family_name`,
@@ -234,7 +235,7 @@ public half of an Ed25519 key your server signs with, and `serverAccess`, the te
    picked a different Google account). People can take it back at any time on `/manage`.
 
 2. **Call Teather from your server.** Sign a fresh token for each request with your private key: header
-   `{ alg: "EdDSA", kid }`, claims `{ iss: <your host>, aud: "https://teather.pages.dev", iat, exp, jti }`, with
+   `{ alg: "EdDSA", kid }`, claims `{ iss: <your host>, aud: "https://teather.technologylearningcompany.com", iat, exp, jti }`, with
    `exp` at most 120 seconds after `iat` and a random `jti` of 16 to 100 characters. Each token works once. Send it
    as `Authorization: Bearer <token>`, with no `Origin` header. `:sub` is the person's `sub` from their identity token.
 
@@ -303,7 +304,7 @@ Promises from Teather reject with an `Error` that has `code`, `message` and (for
 Teather.init({
   pushDelay: 1000,  // ms to wait after a set before uploading (0 to 60000)
   prefix: "teather:", // localStorage key prefix; change only if it clashes with the site's own keys
-  base: "https://teather.pages.dev", // Teather server; change only for local testing
+  base: "https://teather.technologylearningcompany.com", // Teather server; change only for local testing
 });
 ```
 

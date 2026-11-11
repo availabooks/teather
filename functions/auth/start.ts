@@ -67,7 +67,7 @@ function grantPage(site: Site, continueUrl: string): Response {
   <p>While you are away, ${escapeHtml(site.name)}'s server will be able to read and write files in
      <strong>Teather/${escapeHtml(site.host)}/</strong> in your Google Drive. It can't see anything else in your Drive.</p>
   <ul>${items}</ul>
-  <p>You can take this back at any time on the Teather page (teather.pages.dev/manage). Your files stay in your Drive.</p>
+  <p>You can take this back at any time on the Teather page (teather.technologylearningcompany.com/manage). Your files stay in your Drive.</p>
   <div class="row">
     <a class="button primary" href="${escapeHtml(continueUrl)}">Allow and continue to Google</a>
     <button type="button" onclick="window.close()">Not now</button>

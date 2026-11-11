@@ -13,6 +13,8 @@
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) { return "&#" + c.charCodeAt(0) + ";"; });
   }
+  // "projects/photos/a.jpg" -> each part encoded, slashes kept, so the server sees the folders.
+  function filePathUrl(path) { return path.split("/").map(encodeURIComponent).join("/"); }
   function fmtTime(ms) { return ms ? new Date(ms).toLocaleString() : "—"; }
   function fmtSize(n) {
     if (n < 1024) return n + " B";
@@ -242,12 +244,12 @@
         await showDetail(card, host);
       } else if (act === "get-file") {
         var fname = btn.getAttribute("data-name");
-        var res = await api("GET", "/api/sites/" + encodeURIComponent(host) + "/files/" + encodeURIComponent(fname));
-        saveBlob(await res.blob(), fname);
+        var res = await api("GET", "/api/sites/" + encodeURIComponent(host) + "/files/" + filePathUrl(fname));
+        saveBlob(await res.blob(), fname.split("/").pop());
       } else if (act === "del-file") {
         var fn = btn.getAttribute("data-name");
         if (!confirm('Delete the file "' + fn + '"? It goes to your Google Drive trash.')) return;
-        await api("DELETE", "/api/sites/" + encodeURIComponent(host) + "/files/" + encodeURIComponent(fn));
+        await api("DELETE", "/api/sites/" + encodeURIComponent(host) + "/files/" + filePathUrl(fn));
         await showDetail(card, host);
       }
     } catch (err) {

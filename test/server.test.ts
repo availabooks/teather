@@ -5,7 +5,7 @@ import { decodeJwt, importPrivateJwk, importPublicJwk, signJwt, verifySignature 
 import { issueIdToken, jwks } from "../src/identity";
 import { verifyServerToken } from "../src/server-auth";
 import { SITES } from "../src/sites";
-import { checkConditions, checkDirPath, checkFilePath } from "../src/store";
+import { checkConditions, checkDirPath, checkFilePath, Store } from "../src/store";
 import type { DriveFile } from "../src/drive";
 
 const TEATHER = "https://teather.technologylearningcompany.com";
@@ -170,5 +170,30 @@ describe("write conditions", () => {
   it("keeps If-Unmodified-Since working", () => {
     checkConditions(file, { ifUnmodifiedSince: "Thu, 01 Jan 2026 00:00:00 GMT" });
     fails(() => checkConditions(file, { ifUnmodifiedSince: "Wed, 31 Dec 2025 00:00:00 GMT" }));
+  });
+});
+
+describe("listing every file for My Data", () => {
+  it("names files in subfolders by path, keeps reserved names hidden only at the top", async () => {
+    const folder = "application/vnd.google-apps.folder";
+    const tree: DriveFile[] = [
+      { id: "state", name: "state.json", mimeType: "application/json", parents: ["root"] },
+      { id: "top", name: "export.json", mimeType: "application/json", parents: ["root"], size: "3" },
+      { id: "p", name: "projects", mimeType: folder, parents: ["root"] },
+      { id: "ph", name: "photos", mimeType: folder, parents: ["p"] },
+      { id: "a", name: "a.jpg", mimeType: "image/jpeg", parents: ["ph"] },
+      { id: "s2", name: "state.json", mimeType: "application/json", parents: ["p"] },
+    ];
+    const queries: string[] = [];
+    const drive = {
+      childrenOfAny: async (ids: string[]) => {
+        queries.push(ids.join(","));
+        return tree.filter((f) => f.parents?.some((p) => ids.includes(p)));
+      },
+    };
+    const store = Object.assign(Object.create(Store.prototype), { drive, siteFolder: async () => "root" }) as Store;
+    const files = await store.listAllFiles(SITES[0]);
+    expect(files.map((f) => f.name)).toEqual(["export.json", "projects/photos/a.jpg", "projects/state.json"]);
+    expect(queries).toEqual(["root", "p", "ph"]); // one query per level
   });
 });

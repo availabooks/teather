@@ -3,7 +3,7 @@ import { deleteSiteSessions, listServerGrants, revokeServerAccess } from "../../
 import { validateBatch } from "../../../src/merge";
 import { readJson, requireManage, route, type Ctx } from "../../../src/http";
 import { siteForHost } from "../../../src/sites";
-import { checkFileName, Store } from "../../../src/store";
+import { checkFilePath, Store } from "../../../src/store";
 
 /**
  * Manage page only.
@@ -13,12 +13,17 @@ import { checkFileName, Store } from "../../../src/store";
  * DELETE /api/sites/:host                  delete & disconnect (folder to trash, site signed out everywhere)
  * DELETE /api/sites/:host/warnings         dismiss warnings
  * DELETE /api/sites/:host/server-access    take back the site server's access to the folder
- * GET    /api/sites/:host/files/:name      download a file
- * DELETE /api/sites/:host/files/:name      move a file to trash
+ * GET    /api/sites/:host/files/<path>     download a file; <path> may include folders, as "projects/photos/a.jpg"
+ * DELETE /api/sites/:host/files/<path>     move a file to trash
  */
 function parts(ctx: Ctx): string[] {
   const p = ctx.params.path;
   return Array.isArray(p) ? p : p ? [p] : [];
+}
+
+/** The file path after /files/, whether its slashes came as path segments or encoded as %2F in one. */
+function filePath(segments: string[]): string[] {
+  return checkFilePath(segments.join("/"));
 }
 
 function knownSite(host: string) {
@@ -48,12 +53,9 @@ export const onRequestGet = route(async (ctx) => {
     const site = knownSite(host);
     if (!sub) {
       const doc = await store.readState(site);
-      return json({ items: doc.items, updatedAt: doc.updatedAt, files: await store.listFiles(site) });
+      return json({ items: doc.items, updatedAt: doc.updatedAt, files: await store.listAllFiles(site) });
     }
-    if (sub === "files" && name && rest.length === 0) {
-      checkFileName(name);
-      return store.getFile(site, name);
-    }
+    if (sub === "files" && name) return store.getFile(site, filePath([name, ...rest]));
     throw new HttpError(404, "Not found", "not_found");
   });
 });
@@ -71,7 +73,7 @@ export const onRequestPut = route(async (ctx) => {
 
 export const onRequestDelete = route(async (ctx) => {
   const [host, sub, name, ...rest] = parts(ctx);
-  if (!host || rest.length) throw new HttpError(404, "Not found", "not_found");
+  if (!host || (rest.length && sub !== "files")) throw new HttpError(404, "Not found", "not_found");
   return withStore(ctx, async (store) => {
     if (!sub) {
       // Sign the site out first, so its browser copies can't upload the data again.
@@ -89,8 +91,7 @@ export const onRequestDelete = route(async (ctx) => {
       return json({ ok: true });
     }
     if (sub === "files" && name) {
-      checkFileName(name);
-      await store.deleteFile(knownSite(host), name);
+      await store.deleteFile(knownSite(host), filePath([name, ...rest]));
       return json({ ok: true });
     }
     throw new HttpError(404, "Not found", "not_found");

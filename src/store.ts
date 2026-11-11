@@ -290,6 +290,31 @@ export class Store {
     return (await this.listDir(site)).files.map(({ version: _v, ...f }) => f);
   }
 
+  /**
+   * Every file in the site folder and its subfolders (up to the path depth limit), named by path,
+   * such as "projects/photos/a.jpg". One Drive query per folder level, not per folder.
+   */
+  async listAllFiles(site: Site): Promise<Omit<FileInfo, "version">[]> {
+    const out: Omit<FileInfo, "version">[] = [];
+    let level = new Map<string, string>([[await this.siteFolder(site), ""]]); // folder id -> path prefix
+    for (let depth = 0; depth < MAX_PATH_DEPTH && level.size; depth++) {
+      const next = new Map<string, string>();
+      for (const f of await this.drive.childrenOfAny([...level.keys()])) {
+        const parent = f.parents?.find((p) => level.has(p));
+        if (parent === undefined) continue;
+        const prefix = level.get(parent)!;
+        if (f.mimeType === FOLDER_MIME) {
+          if (depth < MAX_PATH_DEPTH - 1) next.set(f.id, `${prefix}${f.name}/`);
+        } else if (!(depth === 0 && isReserved(f.name))) {
+          const { version: _v, ...rest } = info(f);
+          out.push({ ...rest, name: prefix + f.name });
+        }
+      }
+      level = next;
+    }
+    return out.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
   async getFile(site: Site, path: string | string[]): Promise<Response> {
     const f = await this.findFile(site, checkFilePath(path));
     if (!f) throw new HttpError(404, "File not found", "not_found");

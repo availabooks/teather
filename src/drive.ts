@@ -64,6 +64,16 @@ export class Drive {
     return this.list(`'${q(parentId)}' in parents and trashed = false`);
   }
 
+  /** Children of any of these folders, in one query per 40 folders. */
+  async childrenOfAny(parentIds: string[]): Promise<DriveFile[]> {
+    const out: DriveFile[] = [];
+    for (let i = 0; i < parentIds.length; i += 40) {
+      const parents = parentIds.slice(i, i + 40).map((id) => `'${q(id)}' in parents`).join(" or ");
+      out.push(...(await this.list(`(${parents}) and trashed = false`)));
+    }
+    return out;
+  }
+
   async findChild(parentId: string, name: string, folder = false): Promise<DriveFile | null> {
     const mime = folder ? ` and mimeType = '${FOLDER_MIME}'` : ` and mimeType != '${FOLDER_MIME}'`;
     const files = await this.list(`'${q(parentId)}' in parents and name = '${q(name)}' and trashed = false${mime}`);

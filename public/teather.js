@@ -394,10 +394,11 @@
     /**
      * Open Google sign-in in a popup. Call it directly from a click handler, or the
      * browser may block the popup. Resolves with the user once data has synced.
+     * opts.loginHint: an email address for Google to pre-select (they can still pick another account).
      */
-    signIn: function () {
+    signIn: function (opts) {
       ensure();
-      return popupAuth("").then(function () { return Teather.user(); });
+      return popupAuth(hintParam(opts)).then(function () { return Teather.user(); });
     },
 
     /**
@@ -414,11 +415,11 @@
      * Ask the student to let this site's server read and write the site's folder while they are away
      * (only for sites registered for it). Opens a Teather page that explains this, then Google sign-in.
      * Call it directly from a click handler. Resolves to true if they allowed it, false if they closed the window.
-     * It also signs them in (possibly as a different Google account), like signIn().
+     * It also signs them in (possibly as a different Google account), like signIn(). Takes the same opts.
      */
-    allowServerAccess: function () {
+    allowServerAccess: function (opts) {
       ensure();
-      return popupAuth("&grant=server").then(
+      return popupAuth("&grant=server" + hintParam(opts)).then(
         function (payload) { return !!payload.serverAccess; },
         function (e) { if (e && (e.code === "timeout" || e.code === "cancelled")) return false; throw e; }
       );
@@ -460,6 +461,11 @@
   };
 
   /** Run the Teather sign-in popup. `extra` is added to the /auth/start query. Resolves with the result payload. */
+  function hintParam(opts) {
+    var hint = opts && typeof opts.loginHint === "string" ? opts.loginHint.trim() : "";
+    return hint ? "&hint=" + encodeURIComponent(hint) : "";
+  }
+
   function popupAuth(extra) {
     var poll = randomId();
     var url = base + "/auth/start?origin=" + encodeURIComponent(location.origin) + "&poll=" + poll + extra;

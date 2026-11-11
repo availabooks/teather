@@ -5,7 +5,7 @@ import { html, route } from "../../src/http";
 import { type Site, siteForOrigin } from "../../src/sites";
 
 /**
- * Opened in a popup by teather.js: /auth/start?origin=<site origin>&poll=<random id>
+ * Opened in a popup by teather.js: /auth/start?origin=<site origin>&poll=<random id>[&hint=<email>]
  * Sends the student to Google, then on to /auth/callback.
  *
  * With &grant=server (from Teather.allowServerAccess()), it first shows a page explaining that
@@ -17,6 +17,8 @@ export const onRequestGet = route(async (ctx) => {
   const origin = url.searchParams.get("origin") ?? "";
   const poll = url.searchParams.get("poll");
   const grant = url.searchParams.get("grant") === "server";
+  // An email address the site expects; Google gets it as login_hint so that account is pre-selected.
+  const hint = loginHint(url.searchParams.get("hint"));
   const manage = origin === url.origin;
   const site = manage ? null : siteForOrigin(origin, ctx.env.DEV === "1");
   if (!manage && !site) {
@@ -29,11 +31,16 @@ export const onRequestGet = route(async (ctx) => {
   if (grant) {
     if (!site?.serverAccess) return html("This site does not use server access.", 400);
     const nonce = await createOAuthState(ctx.env, origin, site.host, false, poll, "server");
-    return grantPage(site, authUrl(ctx.env, `${url.origin}/auth/callback`, nonce));
+    return grantPage(site, authUrl(ctx.env, `${url.origin}/auth/callback`, nonce, hint));
   }
   const nonce = await createOAuthState(ctx.env, origin, manage ? "teather" : site!.host, manage, poll);
-  return Response.redirect(authUrl(ctx.env, `${url.origin}/auth/callback`, nonce), 302);
+  return Response.redirect(authUrl(ctx.env, `${url.origin}/auth/callback`, nonce, hint), 302);
 });
+
+function loginHint(value: string | null): string | null {
+  const v = (value ?? "").trim();
+  return v.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? v : null;
+}
 
 function grantPage(site: Site, continueUrl: string): Response {
   const a = site.serverAccess!;

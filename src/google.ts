@@ -9,7 +9,8 @@ export interface Profile {
   picture: string | null;
 }
 
-export function authUrl(env: Env, redirectUri: string, state: string): string {
+/** `loginHint`: an email address for Google to pre-select (its account chooser still lets them pick another). */
+export function authUrl(env: Env, redirectUri: string, state: string, loginHint?: string | null): string {
   const p = new URLSearchParams({
     client_id: env.GOOGLE_CLIENT_ID,
     redirect_uri: redirectUri,
@@ -21,6 +22,7 @@ export function authUrl(env: Env, redirectUri: string, state: string): string {
     include_granted_scopes: "true",
     state,
   });
+  if (loginHint) p.set("login_hint", loginHint);
   return `https://accounts.google.com/o/oauth2/v2/auth?${p}`;
 }
 

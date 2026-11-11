@@ -226,6 +226,9 @@ public half of an Ed25519 key your server signs with, and `serverAccess`, the te
    const allowed = await Teather.allowServerAccess(); // true, or false if they closed the window
    ```
 
+   Pass `{ loginHint: "someone@gmail.com" }` when you know which Google account you expect; Google pre-selects it
+   (they can still pick another, so check the identity token's `email`). `signIn()` takes the same option.
+
    Teather shows its own page explaining what your server will do, then Google sign-in. The permission is recorded
    only after that sign-in, and it also signs them in to your site (check `Teather.user()` afterwards: they may have
    picked a different Google account). People can take it back at any time on `/manage`.
@@ -332,9 +335,9 @@ declare global {
       user(): TeatherUser | null;
       pictureUrl(size?: number, user?: TeatherUser | null): string | null;
       sync(): Promise<void>;
-      signIn(): Promise<TeatherUser | null>;
+      signIn(opts?: { loginHint?: string }): Promise<TeatherUser | null>;
       idToken(): Promise<string>;
-      allowServerAccess(): Promise<boolean>;
+      allowServerAccess(opts?: { loginHint?: string }): Promise<boolean>;
       signOut(opts?: { keepLocal?: boolean }): Promise<void>;
       files: {
         list(): Promise<TeatherFile[]>;
